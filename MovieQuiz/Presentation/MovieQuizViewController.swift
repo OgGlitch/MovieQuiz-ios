@@ -6,6 +6,8 @@ final class MovieQuizViewController: UIViewController {
     @IBOutlet private weak var imageView: UIImageView!
     @IBOutlet private weak var counterLabel: UILabel!
     @IBOutlet private weak var textLabel: UILabel!
+    @IBOutlet weak var noButton: UIButton!
+    @IBOutlet weak var yesButton: UIButton!
     
     private var currentQuestionIndex = 0
     private var correctAnswers = 0
@@ -65,6 +67,8 @@ final class MovieQuizViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         imageView.layer.cornerRadius = 20
+        noButton.layer.cornerRadius = 15
+        yesButton.layer.cornerRadius = 15
         show(quiz: convert(questions[currentQuestionIndex]))
     }
     
@@ -89,18 +93,21 @@ final class MovieQuizViewController: UIViewController {
         )
         return quizStep
     }
+    
     private func show(quiz step: QuizStepViewModel) {
         imageView.image = step.image
         counterLabel.text = step.questionNumber
         textLabel.text = step.question
     }
+    
     private func show(quiz result: QuizResultsViewModel) {
         let alert = UIAlertController(
             title: result.title,
             message: result.text,
             preferredStyle: .alert)
         
-        let action = UIAlertAction(title: result.buttonText, style: .default) { _ in
+        let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
+            guard let self = self else { return }
             self.currentQuestionIndex = 0
             self.correctAnswers = 0
             self.show(quiz: self.convert(self.questions[self.currentQuestionIndex]))
@@ -110,18 +117,25 @@ final class MovieQuizViewController: UIViewController {
 
         self.present(alert, animated: true, completion: nil)
     }
+    
     private func showAnswerResult(isCorrect: Bool) {
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+        yesButton.isEnabled = false
+        noButton.isEnabled = false
         if isCorrect {
             correctAnswers += 1
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self = self else { return }
                 self.showNextQuestionOrResults()
                 self.imageView.layer.borderWidth = 0
+                self.yesButton.isEnabled = true
+                self.noButton.isEnabled = true
             }
     }
+    
     private func showNextQuestionOrResults() {
         if currentQuestionIndex == questions.count - 1 {
             let viewModel = QuizResultsViewModel(
